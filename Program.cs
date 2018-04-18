@@ -1,6 +1,14 @@
 /**
  * Use the mini-USB cable to deploy/debug.
+ *  
+ *  Right click on "PingPongBallLauncher" go to properties.
+ *  Go to ".NET Micro Framework" and make sure the "Device" dropdown has
+ *  the HERO board selected. 
  *
+ *  Make sure PDB power is on before running.
+ *  
+ *  To Deploy/Run -> Click the "Start" button
+ *  Click the "Stop" button to sotp debugging.
  * 
  */
 
