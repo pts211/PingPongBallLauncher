@@ -31,6 +31,17 @@ namespace PingPongBallLauncher
         }
     }
 
+    public struct CupPosition
+    {
+        public int angle, speed;
+
+        public CupPosition(int ang, int spd)
+        {
+            angle = ang;
+            speed = spd;
+        }
+    }
+
     public class RobotApplication
     {
         //PID Values
@@ -44,6 +55,16 @@ namespace PingPongBallLauncher
         const float TURRET_D = 0.01f;
         const float TURRET_F = 0.0f;
 
+        const int RPM_INCREMENT = 100;
+        const int ANGLE_INCREMENT = 1;
+
+        int activeCup = 0;
+        CupPosition[] cupPositions = new CupPosition[10];
+
+        enum MODE { MANUAL, PRESET };
+
+        MODE currentMode = MODE.MANUAL;
+
         const int NUM_BUTTONS = 12;
         const int NUM_AXIS = 2;
         enum JOYSTICK : uint { X = 1, A = 2, B = 3, Y = 4, LB = 5, RB = 6, LT = 7, RT = 8, BACK = 9, START = 10, LSTICK_BTN = 11, RSTICK_BTN = 12, XAXIS_L = 13, XAXIS_R = 14, YAXIS_U = 15, YAXIS_D = 16 };
@@ -53,9 +74,10 @@ namespace PingPongBallLauncher
         const double SHOOTER_RATIO = 1.0f;
 
         const double MAX_SPEED = 5000;
+        const int MAX_ANGLE = 90;
 
         bool isRunning = false;
-        bool isClosedLoopEnabled = false;
+        bool isPrintEnabled = false;
 
         TalonSrx _turret = new TalonSrx(2);
         TalonSrx _shooter = new TalonSrx(1);
@@ -75,10 +97,52 @@ namespace PingPongBallLauncher
 
         public void init()
         {
+            initCupSettings();
             initTurret();
             initShooter();
 
             Thread.Sleep(100);  //wait to make sure the positions take effect
+        }
+
+        void initCupSettings()
+        {
+
+            // SPEEDS AND ANGLES
+            /*
+              9   8   7   6  
+                5   4   3  
+                  2   1  
+                    0 
+            */
+            cupPositions[0].speed = 2000; //RPM
+            cupPositions[0].angle = 0;    //DEGREES
+
+            cupPositions[1].speed = 2000; //RPM
+            cupPositions[1].angle = 0;    //DEGREES
+
+            cupPositions[2].speed = 2000; //RPM
+            cupPositions[2].angle = 0;    //DEGREES
+
+            cupPositions[3].speed = 2000; //RPM
+            cupPositions[3].angle = 0;    //DEGREES
+
+            cupPositions[4].speed = 2000; //RPM
+            cupPositions[4].angle = 0;    //DEGREES
+
+            cupPositions[5].speed = 2000; //RPM
+            cupPositions[5].angle = 0;    //DEGREES
+
+            cupPositions[6].speed = 2000; //RPM
+            cupPositions[6].angle = 0;    //DEGREES
+
+            cupPositions[7].speed = 2000; //RPM
+            cupPositions[7].angle = 0;    //DEGREES
+
+            cupPositions[8].speed = 2000; //RPM
+            cupPositions[8].angle = 0;    //DEGREES
+
+            cupPositions[9].speed = 2000; //RPM
+            cupPositions[9].angle = 0;    //DEGREES
         }
 
         void initTurret()
@@ -160,77 +224,69 @@ namespace PingPongBallLauncher
             FillBtns(ref _btns);
 
             //MAX RPM: ~4500
-            
-            // X Button                   
+
             if (CheckButton(JOYSTICK.X))
             {
-                //TEAM: Change this to modify how much the RPM changes each time the button is pressed.
-                rpmSetpoint -= 100;
-                SetShooterSpeed(rpmSetpoint);
+                rpmSetpoint -= RPM_INCREMENT;
             }
 
             if (CheckButton(JOYSTICK.B))
             {
-                //TEAM: Change this to modify how much the RPM changes each time the button is pressed.
-                rpmSetpoint += 100;
-                SetShooterSpeed(rpmSetpoint);
+                rpmSetpoint += RPM_INCREMENT;
             }
 
             if (CheckButton(JOYSTICK.A))
             {
-                //TEAM: Change this to modify how many degrees the angle changes each time the button is pressed.
-                angleSetpoint -= 1;
-                scaledValue = degreesToScaledUnit(angleSetpoint);
-                Debug.Print("Angle Setpoint: " + angleSetpoint + " Scaled value: " + scaledValue);
-                _turret.Set(scaledValue);
+                angleSetpoint -= ANGLE_INCREMENT;
             }
             
             if (CheckButton(JOYSTICK.Y))
             {
-                //TEAM: Change this to modify how many degrees the angle changes each time the button is pressed.
-                angleSetpoint += 1;
-                scaledValue = degreesToScaledUnit(angleSetpoint);
-                Debug.Print("Angle Setpoint: " + angleSetpoint + " Scaled value: " + scaledValue);
-                _turret.Set(scaledValue);
-
+                angleSetpoint += ANGLE_INCREMENT;
             }
 
             if (CheckButton(JOYSTICK.RB))
             {
-                //UNUSED   
+                if(activeCup < 9)
+                {
+                    activeCup++;
+                }
+                PrintBeerPong();
             }
 
             if (CheckButton(JOYSTICK.LB))
             {
-                //UNUSED
+                if (activeCup > 0)
+                {
+                    activeCup--;
+                }
+                PrintBeerPong();
             }
 
             if (CheckButton(JOYSTICK.RT))
             {
-                Print_NewRotation();
+                ToggleMode();
             }
 
             if (CheckButton(JOYSTICK.LT))
             {
-                Print_SRX_Data();
+                isPrintEnabled = !isPrintEnabled;
             }
 
-            if (isClosedLoopEnabled)
+            if(isPrintEnabled)
             {
-                //GoToPositionInDegrees(angleSetpoint);
+                Print_All();
             }
-            
-            //Print_SRX_Data();
+
+            SetShooterAndTurret();
+
             //Print_Speed();
-            Print_All();
             //Print_Rotations();
             //Print_Buttons();
 
             /* copy btns => btnsLast */
             System.Array.Copy(_btns, _btnsLast, _btns.Length);
         }
-
-
 
         bool CheckButton(JOYSTICK btn)
         {
@@ -239,12 +295,51 @@ namespace PingPongBallLauncher
             return _btns[(int)btn] && !_btnsLast[(int)btn];
         }
 
-        void SetShooterSpeed(float speed)
+        void ToggleMode()
+        {
+            if(currentMode == MODE.MANUAL)
+            {
+                currentMode = MODE.PRESET;
+            }
+            else
+            {
+                currentMode = MODE.MANUAL;
+            }
+        }
+
+        void SetShooterAndTurret()
+        {
+            if(currentMode == MODE.MANUAL)
+            {
+                SetShooterSpeed(rpmSetpoint);
+                SetTurretAngle(angleSetpoint);
+            }
+            else if(currentMode == MODE.PRESET)
+            {
+                SetShooterSpeed(cupPositions[activeCup].speed);
+                SetTurretAngle(cupPositions[activeCup].angle);
+            }
+        }
+
+        void SetShooterSpeed(int speed)
         {
             if (speed > 0 && speed < MAX_SPEED)
             {
                 _shooter.Set(speed);
             }
+        }
+
+        void SetTurretAngle(int angle)
+        {
+            if(angle > MAX_ANGLE)
+            {
+                angle = MAX_ANGLE;
+            }
+            else if(angle < (MAX_ANGLE * -1) )
+            {
+                angle = MAX_ANGLE * -1;
+            }
+            _turret.Set(degreesToScaledUnit(angle));
         }
        
         /** throw all the gamepad buttons into an array */
@@ -252,7 +347,6 @@ namespace PingPongBallLauncher
         {
             for (uint i = 1; i <= NUM_BUTTONS; ++i)
             {
-                //Debug.Print("i: " + i);
                 btns[i] = _gamepad.GetButton(i);
             }
 
@@ -303,37 +397,63 @@ namespace PingPongBallLauncher
 
         /** DEBUG LOGGING FUNCTIONS **/
 
-        void Print_SRX_Data()
+        void PrintBeerPong()
         {
             StringBuilder _ms = new StringBuilder();
             _ms.Clear();
-            _ms.Append(" CurrentPos=");
-            _ms.Append(_turret.GetPosition());
-            _ms.Append(" Output Voltage ");
-            _ms.Append(_turret.GetOutputVoltage());
+            _ms.Append("\n\n");
 
+            int noOfRows = 4;
+            int rowCount = 4;
+            int counter = 5;
+            int index = 0;
+
+            for (int i = 0; i < noOfRows; i++)
+            {
+                //Printing i spaces at the beginning of each row
+                for (int j = 1; j <= i; j++)
+                {
+                    _ms.Append("  ");
+                }
+                for (int j = 1; j <= rowCount; j++)
+                {
+                    index = counter + rowCount;
+                    if (index == activeCup)
+                    {
+                        _ms.Append("[" + index + "] ");
+                    }
+                    else
+                    {
+                        _ms.Append(" " + index + "  ");
+                    }
+
+                    if (j != rowCount)
+                    {
+                        counter--;
+                    }
+                }
+                _ms.Append("\n");
+                rowCount--;
+            }
+            _ms.Append("\n");
+
+            _ms.Append(" Target Turret Angle: " + cupPositions[activeCup].angle + " degrees | Target Shooter Speed: " + cupPositions[activeCup].speed + " RPM ");
 
             Debug.Print(_ms.ToString());
         }
-
+        
         void Print_All()
         {
             StringBuilder _ms = new StringBuilder();
             _ms.Clear();
-            _ms.Append(" angleSetpoint=");
+            _ms.Append(" Target Angle=");
             _ms.Append(angleSetpoint);
-            _ms.Append("_t.GetEncPosition()=");
-            _ms.Append(_turret.GetEncPosition());
-            _ms.Append("  GetPositionInDegrees()=");
+            _ms.Append("  Current Angle=");
             _ms.Append(scaledUnitsToDegrees(_turret.GetEncPosition()));
-            _ms.Append(" rpmSetpoint=");
+            _ms.Append(" Target RPM=");
             _ms.Append(rpmSetpoint);
-            _ms.Append(" _s.GetSpeed()=");
+            _ms.Append(" Current RPM=");
             _ms.Append(_shooter.GetSpeed());
-            _ms.Append(" _s.GetEncPosition()=");
-            _ms.Append(_shooter.GetEncPosition());
-            _ms.Append(" _s.GetEncVel()=");
-            _ms.Append(_shooter.GetEncVel());
             Debug.Print(_ms.ToString());
         }
 
@@ -382,17 +502,6 @@ namespace PingPongBallLauncher
             }
 
             Debug.Print(_btnStr.ToString());
-        }
-
-        void Print_NewRotation()
-        {
-            StringBuilder _out = new StringBuilder();
-
-            _out.Clear();
-            _out.Append(" turretEncoder: " + _turret.GetEncPosition());
-            _out.Append(" turretPosition: " + _turret.GetPosition());
-
-            Debug.Print(_out.ToString());
         }
     }
 }
