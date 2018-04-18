@@ -44,19 +44,34 @@ namespace PingPongBallLauncher
 
     public class RobotApplication
     {
-        //PID Values
+        /* ************************************************************** */
+        /* ******************** VALUES TO MODIFY ******************** */
+        /* ************************************************************** */
+
+        //Shooter PID Values
         const float SHOOTER_P = 0.05f;
         const float SHOOTER_I = 0.0f;
         const float SHOOTER_D = 2.5f;
         const float SHOOTER_F = 0.0322f;
 
+        //Turret PID Values
         const float TURRET_P = 0.02f;
         const float TURRET_I = 0.0f;
         const float TURRET_D = 0.01f;
         const float TURRET_F = 0.0f;
 
+        //Values used in MANUAL mode. The amount that the RPM or angle
+        //will increase/decrease.
         const int RPM_INCREMENT = 100;
         const int ANGLE_INCREMENT = 1;
+
+        const int STARTING_RPM = 0;     //The RPM that the shooter will start at in MANUAL mode.
+
+        //void initCupSettings() <-- Modify values in this function (below) to change all the setpoints.
+
+        /* ************************************************************** */
+        /* ******************** END VALUES TO MODIFY ******************** */
+        /* ************************************************************** */
 
         int activeCup = 0;
         CupPosition[] cupPositions = new CupPosition[10];
@@ -90,7 +105,7 @@ namespace PingPongBallLauncher
         /** hold the last button values from gamepad, this makes detecting on-press events trivial */
         bool[] _btnsLast = new bool[16 + 1];
 
-        int rpmSetpoint = 0;
+        int rpmSetpoint = STARTING_RPM;
         int angleSetpoint = 0;
 
         float scaledValue = 0;
@@ -300,10 +315,23 @@ namespace PingPongBallLauncher
             if(currentMode == MODE.MANUAL)
             {
                 currentMode = MODE.PRESET;
+
+                StringBuilder _ms = new StringBuilder();
+                _ms.Clear();
+                _ms.Append(" ****************************************\n");
+                _ms.Append(" CURRENT MODE: PRESET\n");
+                _ms.Append(" ****************************************\n");
+                Debug.Print(_ms.ToString());
             }
             else
             {
                 currentMode = MODE.MANUAL;
+                StringBuilder _ms = new StringBuilder();
+                _ms.Clear();
+                _ms.Append(" ****************************************\n");
+                _ms.Append(" CURRENT MODE: MODE\n");
+                _ms.Append(" ****************************************\n");
+                Debug.Print(_ms.ToString());
             }
         }
 
