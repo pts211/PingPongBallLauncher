@@ -68,10 +68,12 @@ namespace PingPongBallLauncher
         const float SHOOTER_F = 0.0322f;
 
         //Turret PID Values
-        const float TURRET_P = 0.02f;
+        const float TURRET_P = 0.1f;
         const float TURRET_I = 0.0f;
         const float TURRET_D = 0.01f;
         const float TURRET_F = 0.0f;
+
+        const float MINIMUM_TURRET_VOLTAGE = 1.0f; //volts
 
         //Values used in MANUAL mode. The amount that the RPM or angle
         //will increase/decrease.
@@ -145,31 +147,31 @@ namespace PingPongBallLauncher
                     0 
             */
             cupPositions[0].speed = 2000; //RPM
-            cupPositions[0].angle = 0;    //DEGREES
+            cupPositions[0].angle = -5;    //DEGREES
 
             cupPositions[1].speed = 2000; //RPM
-            cupPositions[1].angle = 0;    //DEGREES
+            cupPositions[1].angle = -15;    //DEGREES
 
             cupPositions[2].speed = 2000; //RPM
-            cupPositions[2].angle = 0;    //DEGREES
+            cupPositions[2].angle = -10;    //DEGREES
 
             cupPositions[3].speed = 2000; //RPM
             cupPositions[3].angle = 0;    //DEGREES
 
             cupPositions[4].speed = 2000; //RPM
-            cupPositions[4].angle = 0;    //DEGREES
+            cupPositions[4].angle = -20;    //DEGREES
 
             cupPositions[5].speed = 2000; //RPM
-            cupPositions[5].angle = 0;    //DEGREES
+            cupPositions[5].angle = -21;    //DEGREES
 
             cupPositions[6].speed = 2000; //RPM
-            cupPositions[6].angle = 0;    //DEGREES
+            cupPositions[6].angle = -30;    //DEGREES
 
             cupPositions[7].speed = 2000; //RPM
-            cupPositions[7].angle = 0;    //DEGREES
+            cupPositions[7].angle = -20;    //DEGREES
 
             cupPositions[8].speed = 2000; //RPM
-            cupPositions[8].angle = 0;    //DEGREES
+            cupPositions[8].angle = -12;    //DEGREES
 
             cupPositions[9].speed = 2000; //RPM
             cupPositions[9].angle = 0;    //DEGREES
@@ -191,7 +193,7 @@ namespace PingPongBallLauncher
             _turret.SelectProfileSlot(0);
 
             /* set the peak and nominal outputs, 12V means full */
-            _turret.ConfigNominalOutputVoltage(+0.65f, -0.65f); //The minimum voltage that will be applied to the turret.
+            _turret.ConfigNominalOutputVoltage(MINIMUM_TURRET_VOLTAGE, -1 * MINIMUM_TURRET_VOLTAGE); //The minimum voltage that will be applied to the turret.
             _turret.ConfigPeakOutputVoltage(+3.0f, -3.0f);      //THe maximum voltage that will be applied to the turret.
 
             /* how much error is allowed?  This defaults to 0. */
@@ -277,7 +279,7 @@ namespace PingPongBallLauncher
 
             if (CheckButton(JOYSTICK.RB))
             {
-                if(activeCup < 9)
+                if(currentMode == MODE.PRESET && activeCup < 9)
                 {
                     activeCup++;
                 }
@@ -286,7 +288,7 @@ namespace PingPongBallLauncher
 
             if (CheckButton(JOYSTICK.LB))
             {
-                if (activeCup > 0)
+                if (currentMode == MODE.PRESET && activeCup > 0)
                 {
                     activeCup--;
                 }
@@ -342,6 +344,7 @@ namespace PingPongBallLauncher
                 _ms.Append(" CURRENT MODE: PRESET\n");
                 _ms.Append(" ****************************************\n");
                 Debug.Print(_ms.ToString());
+                PrintBeerPong();
             }
             else
             {
