@@ -18,6 +18,8 @@ using CTRE;
 using System.Threading;
 using System.Text;
 using CTRE.Phoenix.MotorControllers;
+using CTRE.Phoenix.FRC;
+using CTRE.Phoenix;
 
 
 namespace PingPongBallLauncher
@@ -55,6 +57,9 @@ namespace PingPongBallLauncher
         /* ************************************************************** */
         /* ******************** VALUES TO MODIFY ******************** */
         /* ************************************************************** */
+
+        //Ball Feed Delay
+        const int FEED_DELAY = 250;
 
         //Shooter PID Values
         const float SHOOTER_P = 0.05f;
@@ -102,8 +107,10 @@ namespace PingPongBallLauncher
         bool isRunning = false;
         bool isPrintEnabled = false;
 
-        TalonSrx _turret = new TalonSrx(2);
         TalonSrx _shooter = new TalonSrx(1);
+        TalonSrx _turret = new TalonSrx(2);
+
+        PneumaticControlModule _pcm = new PneumaticControlModule(3);
 
         /** Use a USB gamepad plugged into the HERO */
         CTRE.Phoenix.Controller.GameController _gamepad = new CTRE.Phoenix.Controller.GameController(CTRE.Phoenix.UsbHostDevice.GetInstance(0), 0);
@@ -296,7 +303,12 @@ namespace PingPongBallLauncher
                 isPrintEnabled = !isPrintEnabled;
             }
 
-            if(isPrintEnabled)
+            if (CheckButton(JOYSTICK.YAXIS_D))
+            {
+                FeedBall();
+            }
+
+            if (isPrintEnabled)
             {
                 Print_All();
             }
@@ -376,6 +388,13 @@ namespace PingPongBallLauncher
                 angle = MAX_ANGLE * -1;
             }
             _turret.Set(degreesToScaledUnit(angle));
+        }
+
+        void FeedBall()
+        {
+            _pcm.SetSolenoidOutput(0, true);
+            Thread.Sleep(FEED_DELAY);  //Amount of time to keep the ball feed open.
+            _pcm.SetSolenoidOutput(0, false);
         }
        
         /** throw all the gamepad buttons into an array */
